@@ -12,6 +12,7 @@ from pathlib import Path
 sys.path.append(Path(__file__).parent.parent.absolute().__str__())  # to run '$ python *.py' files in subdirectories
 
 import torch
+import numpy
 import torch.nn as nn
 from torch.utils.mobile_optimizer import optimize_for_mobile
 
