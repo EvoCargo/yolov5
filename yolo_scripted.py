@@ -30,6 +30,7 @@ class YoloFacade(torch.nn.Module):
         iou_thres: float = 0.6,
         agnostic_nms: bool = True,
         device: Device = default_device,
+        version: str = '1.0.0'
     ):
         '''
         Args:
@@ -39,6 +40,7 @@ class YoloFacade(torch.nn.Module):
                 to original scale
             conf_thres, iou_thres, agnostic_nms: params of NMS
             device: cuda or cpu
+            version: version number string n.n.n formatted
         '''
         super().__init__()
 
@@ -50,6 +52,8 @@ class YoloFacade(torch.nn.Module):
         self.conf_thres = conf_thres
         self.iou_thres = iou_thres
         self.agnostic_nms = agnostic_nms
+        
+        self.version = version
 
         self.model = torch.jit.load(traced_path.as_posix(), map_location=self.device)
         self.model.eval()
@@ -93,7 +97,15 @@ class YoloFacade(torch.nn.Module):
         return torch.stack((xv, yv), 2).view((1, 1, ny, nx, 2)).float()
 
     @classmethod
-    def from_checkpoint(cls, yolo_path: File, traced_path: File, device: Device, iou_thres, conf_thres):
+    def from_checkpoint(
+        cls, 
+        yolo_path: File, 
+        traced_path: File, 
+        device: Device, 
+        iou_thres: float, 
+        conf_thres: float,
+        version: str
+    ):
         '''Loads class from checkpoint(s)
 
         Args:
@@ -110,11 +122,19 @@ class YoloFacade(torch.nn.Module):
                    anchor_grid, 
                    device=device, 
                    iou_thres=iou_thres, 
-                   conf_thres=conf_thres)
+                   conf_thres=conf_thres,
+                   version=version)
 
     @classmethod
     def script(
-        cls, yolo_path: File, traced_path: File, scripted_path: File, device: Device, iou_thres=0.6, conf_thres=0.1
+        cls, 
+        yolo_path: File, 
+        traced_path: File, 
+        scripted_path: File, 
+        device: Device, 
+        iou_thres: float = 0.6, 
+        conf_thres: float = 0.1,
+        version: str = '1.0.0'
     ):
         '''Saves scripted version of Facade to scripted_path
 
@@ -123,8 +143,10 @@ class YoloFacade(torch.nn.Module):
             traced_path: tha path to traced trained model
             scripted_path: the path for scripted model
             device: the device
+            
+            iou_thres, conf_thres, version: see `__init__`
         '''
-        facade = cls.from_checkpoint(yolo_path, traced_path, device, iou_thres, conf_thres)
+        facade = cls.from_checkpoint(yolo_path, traced_path, device, iou_thres, conf_thres, version)
         scripted = torch.jit.script(facade)
         scripted.save(scripted_path.as_posix())
 
